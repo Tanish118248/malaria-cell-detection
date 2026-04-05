@@ -1,13 +1,3 @@
-# ============================================================
-#  MALARIA DETECT AI — Flask Backend Server
-#  EST Project UCS321 | AI for Engineers | 4th Semester
-# ============================================================
-# INSTALL (run once):
-#   pip install flask flask-cors torch torchvision pillow
-# RUN:
-#   python app.py
-# ============================================================
-
 import io
 import base64
 import torch
@@ -18,16 +8,14 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from torchvision import transforms, models
 
-# ── CONFIG ─────────────────────────────────────────────────
-MODEL_PATH = 'malaria_model.pth'   # must be in same folder
+MODEL_PATH = 'malaria_model.pth'   
 DEVICE     = 'cuda' if torch.cuda.is_available() else 'cpu'
 CLASSES    = ['Parasitized', 'Uninfected']
 IMG_SIZE   = 224
 
 app = Flask(__name__)
-CORS(app)   # allows the HTML file to call this server
+CORS(app)  
 
-# ── LOAD MODEL ─────────────────────────────────────────────
 def load_model():
     model = models.efficientnet_b0(weights=None)
     in_features = model.classifier[1].in_features
@@ -47,7 +35,6 @@ def load_model():
 
 model = load_model()
 
-# ── IMAGE TRANSFORM ────────────────────────────────────────
 transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.ToTensor(),
@@ -55,7 +42,6 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225]),
 ])
 
-# ── GRAD-CAM ───────────────────────────────────────────────
 class GradCAM:
     def __init__(self, model):
         self.model       = model
@@ -89,7 +75,6 @@ class GradCAM:
 
 
 def generate_heatmap_base64(original_img, cam):
-    """Overlay Grad-CAM heatmap on original image, return base64 PNG."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -122,9 +107,6 @@ def generate_heatmap_base64(original_img, cam):
     buf.seek(0)
     return base64.b64encode(buf.read()).decode('utf-8')
 
-
-# ── ROUTES ─────────────────────────────────────────────────
-
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
@@ -146,28 +128,24 @@ def predict():
         return jsonify({'error': 'Empty filename'}), 400
 
     try:
-        # Load & preprocess image
         img = Image.open(file.stream).convert('RGB')
         input_tensor = transform(img).unsqueeze(0).to(DEVICE)
 
-        # Predict
         with torch.no_grad():
             outputs     = model(input_tensor)
             probs       = torch.softmax(outputs, dim=1)[0]
             pred_idx    = probs.argmax().item()
             pred_label  = CLASSES[pred_idx]
             confidence  = probs[pred_idx].item() * 100
-            inf_prob    = probs[0].item() * 100   # Parasitized
-            hlt_prob    = probs[1].item() * 100   # Uninfected
+            inf_prob    = probs[0].item() * 100   
+            hlt_prob    = probs[1].item() * 100   
 
-        # Grad-CAM
         input_tensor_grad = transform(img).unsqueeze(0).to(DEVICE)
         input_tensor_grad.requires_grad_(True)
         gradcam  = GradCAM(model)
         cam      = gradcam.generate(input_tensor_grad, pred_idx)
         heatmap  = generate_heatmap_base64(img, cam) if cam is not None else None
 
-        # Risk level
         risk = 'High' if (pred_label == 'Parasitized' and confidence > 80) else \
                'Moderate' if pred_label == 'Parasitized' else 'Low'
 
@@ -184,8 +162,6 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ── RUN ────────────────────────────────────────────────────
 if __name__ == '__main__':
     print("\n" + "="*50)
     print("  🔬 MalariaDetect AI — Flask Server")
@@ -195,5 +171,4 @@ if __name__ == '__main__':
     print(f"  URL    : http://localhost:5000")
     print("="*50 + "\n")
     app.run(debug=True, host='0.0.0.0', port=5000)
-
 
