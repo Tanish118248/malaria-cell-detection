@@ -1,3 +1,4 @@
+<!-- this is the forntend of the model -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -134,7 +135,7 @@
   <section class="hero">
     <div class="hero-tag">
       <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
-      EST Project UCS321 · AI For Engineers · 4th Semester
+       AI For Engineers  
     </div>
     <h1>Blood Cell<br/><em>Malaria Detection</em><br/>System</h1>
     <p class="hero-sub">Upload a blood cell microscope image and get an instant diagnosis from your trained EfficientNet-B0 model with Grad-CAM explainability.</p>
@@ -265,7 +266,7 @@ async function checkServer(){
     document.getElementById('status-msg').textContent='⚠ Run: python app.py  to start the model server';
     document.getElementById('btn-analyse').disabled=true;
   }
-}
+}  
 checkServer();
 setInterval(checkServer,5000);
 
